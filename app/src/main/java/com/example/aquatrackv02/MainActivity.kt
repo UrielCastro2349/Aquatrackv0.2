@@ -51,55 +51,6 @@ data class Bebida(
 )
 
 class MainActivity : ComponentActivity() {
-    
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            // Permiso concedido, puedes realizar la acción que requiera el permiso
-            Toast.makeText(this, "Permiso concedido", Toast.LENGTH_SHORT).show()
-        } else {
-            // Permiso denegado, maneja la situación adecuadamente
-            Toast.makeText(this, "Permiso denegado", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    overrride fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        solicitarPermisoNotificaciones()
-    }
-    
-    private fun solicitarPermisoNotificaciones(){
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
-            when {
-                ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED -> {
-                    // Tenemos el permiso
-                }
-                shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
-                    mostrarDialogoExplicativo()
-                }
-                else -> {
-                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-
-            }
-        }
-    }
-
-    private fun mostrarDialogoExplicativo() {
-        AlertDialog.Builder(this)
-            .setTitle("Permiso de notificaciones")
-            .setMessage("Esta aplicación necesita acceso a las notificaciones para enviar recordatorios.")
-            .setPositiveButton("Aceptar") { _, _ ->
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-            .setNegativeButton("Cancelar", null)
-            .create()
-            .show()
-    }
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
