@@ -1,5 +1,8 @@
 package com.example.aquatrackv02
 
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import NotificationHelper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -32,12 +35,11 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.graphics.Color
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -51,9 +53,35 @@ data class Bebida(
 )
 
 class MainActivity : ComponentActivity() {
+
+    private val bebidas = mutableStateListOf<Bebida>()
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED){
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        }
+        NotificationHelper.createNotificationChannel(this)
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            val permissions = mutableListOf<String>()
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+            if (permissions.isNotEmpty()) {
+                ActivityCompat.requestPermissions(this, permissions.toTypedArray(), 102)
+            }
+        }
+
+        NotificationHelper.showNotification(this, "Test", "Notificaciones activadas", 1)
+
         enableEdgeToEdge()
         setContent {
             Aquatrackv02Theme {
@@ -66,8 +94,12 @@ class MainActivity : ComponentActivity() {
                             actions = {
                                 Button(
                                     onClick = {
+                                        val gson = Gson()
+                                        val bebidasJson = gson.toJson(bebidas)
                                         // Navegar a la actividad de gráficos
-                                        val intent = Intent(this@MainActivity, GraficasActivity::class.java)
+                                        val intent = Intent(this@MainActivity, GraficasActivity::class.java).apply {
+                                            putExtra("bebidas_json", bebidasJson)
+                                        }
                                         startActivity(intent)
                                     },
                                     colors = ButtonDefaults.buttonColors(
@@ -82,7 +114,10 @@ class MainActivity : ComponentActivity() {
                     },
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
-                    PantallaRegistroBebidas(modifier = Modifier.padding(innerPadding))
+                    PantallaRegistroBebidas(
+                        bebidas = bebidas,
+                        modifier = Modifier.padding(innerPadding)
+                    )
                 }
             }
         }
@@ -91,8 +126,9 @@ class MainActivity : ComponentActivity() {
 
 
  @OptIn(ExperimentalMaterial3Api::class) @Composable
-fun PantallaRegistroBebidas(modifier: Modifier = Modifier) {
+fun PantallaRegistroBebidas(bebidas: SnapshotStateList<Bebida>, modifier: Modifier = Modifier) {
     // Estado para mantener la lista de bebidas
+    val context = LocalContext.current
     val bebidas = remember { mutableStateListOf<Bebida>() }
 
     // Estados para el formulario
@@ -231,7 +267,7 @@ fun PantallaRegistroBebidas(modifier: Modifier = Modifier) {
                     ) {
                         Text(
                             text = "No hay bebidas registradas hoy",
-                            color = Color.Gray
+                            color = androidx.compose.ui.graphics.Color.Gray
                         )
                     }
                 } else {
@@ -349,7 +385,7 @@ fun PantallaRegistroBebidas(modifier: Modifier = Modifier) {
                 ) {
                     Text(
                         text = "No hay bebidas registradas hoy",
-                        color = Color.Gray
+                        color = androidx.compose.ui.graphics.Color.Gray
                     )
                 }
             } else {
@@ -446,12 +482,33 @@ fun PantallaRegistroBebidas(modifier: Modifier = Modifier) {
             confirmButton = {
                 Button(
                     onClick = {
+
+
                         // Validar datos y agregar a la lista
                         val cantidad = cantidadMl.toIntOrNull() ?: 0
                         if (cantidad > 0) {
                             bebidas.add(Bebida(tipo = tipoBebidaSeleccionada, cantidad = cantidad))
+                            val sharedPreferences = context.getSharedPreferences("app_data", Context.MODE_PRIVATE)
+                            val editor = sharedPreferences.edit()
+                            val gson = Gson()
+                            val bebidasJson = gson.toJson(bebidas)
+                            editor.putString("bebidas_guardadas", bebidasJson)
+                            editor.apply()
                             cantidadMl = "250"  // Reset valor predeterminado
                             mostrarDialogo = false
+
+                            //Calcular el total
+                            val totalMl = bebidas.sumOf { it.cantidad }
+
+                            //Notificar  si alcanza o supera la meta
+                            if (totalMl >= 2500){
+                                NotificationHelper.showNotification(
+                                    context=context,
+                                    title = "¡Felicidades!",
+                                    message = "Has llegado a tu meta diaria de 2500 ml",
+                                    notificationId = 100
+                                )
+                            }
                         }
                     }
                 ) {
@@ -470,7 +527,8 @@ fun PantallaRegistroBebidas(modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 fun PantallaRegistroBebidasPreview() {
+    val bebidasPreview = remember { mutableStateListOf<Bebida>() }
     Aquatrackv02Theme {
-        PantallaRegistroBebidas()
+        PantallaRegistroBebidas(bebidas = bebidasPreview)
     }
 }

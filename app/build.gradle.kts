@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation("androidx.constraintlayout:constraintlayout-compose:1.1.1")
+    implementation(libs.gson)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

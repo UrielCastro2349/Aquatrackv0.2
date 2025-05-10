@@ -1,5 +1,8 @@
 package com.example.aquatrackv02
 
+import android.content.Context
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -44,8 +47,14 @@ class GraficasActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         // Obtener datos de prueba (en una app real, estos deberían venir de una base de datos)
-        val datosEjemplo = obtenerDatosEjemplo()
-        
+        val sharedPreferences = getSharedPreferences("app_data", Context.MODE_PRIVATE)
+        val bebidasJson = sharedPreferences.getString("bebidas_guardadas", null)
+
+        val gson = Gson()
+        val type = object : TypeToken<List<Bebida>>() {}.type
+        val datosUsuario = gson.fromJson<List<Bebida>>(bebidasJson, type)
+
+
         setContent {
             Aquatrackv02Theme {
                 Scaffold(
@@ -65,7 +74,7 @@ class GraficasActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
                     PantallaGraficos(
-                        bebidas = datosEjemplo,
+                        bebidas = datosUsuario ?: emptyList(),
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -73,49 +82,6 @@ class GraficasActivity : ComponentActivity() {
         }
     }
     
-    private fun obtenerDatosEjemplo(): List<Bebida> {
-        val calendar = Calendar.getInstance()
-        val hoy = calendar.time
-        
-        // Crear datos para los últimos 7 días
-        val datos = mutableListOf<Bebida>()
-        
-        // Hoy
-        datos.add(Bebida(tipo = "Agua", cantidad = 250, fecha = hoy))
-        datos.add(Bebida(tipo = "Café", cantidad = 200, fecha = hoy))
-        datos.add(Bebida(tipo = "Jugo", cantidad = 300, fecha = hoy))
-        
-        // Ayer
-        calendar.add(Calendar.DAY_OF_MONTH, -1)
-        datos.add(Bebida(tipo = "Agua", cantidad = 500, fecha = calendar.time))
-        datos.add(Bebida(tipo = "Té", cantidad = 250, fecha = calendar.time))
-        
-        // Anteayer
-        calendar.add(Calendar.DAY_OF_MONTH, -1)
-        datos.add(Bebida(tipo = "Agua", cantidad = 750, fecha = calendar.time))
-        datos.add(Bebida(tipo = "Refresco", cantidad = 330, fecha = calendar.time))
-        
-        // 3 días atrás
-        calendar.add(Calendar.DAY_OF_MONTH, -1)
-        datos.add(Bebida(tipo = "Agua", cantidad = 1000, fecha = calendar.time))
-        
-        // 4 días atrás
-        calendar.add(Calendar.DAY_OF_MONTH, -1)
-        datos.add(Bebida(tipo = "Agua", cantidad = 500, fecha = calendar.time))
-        datos.add(Bebida(tipo = "Café", cantidad = 200, fecha = calendar.time))
-        datos.add(Bebida(tipo = "Leche", cantidad = 250, fecha = calendar.time))
-        
-        // 5 días atrás
-        calendar.add(Calendar.DAY_OF_MONTH, -1)
-        datos.add(Bebida(tipo = "Agua", cantidad = 750, fecha = calendar.time))
-        
-        // 6 días atrás
-        calendar.add(Calendar.DAY_OF_MONTH, -1)
-        datos.add(Bebida(tipo = "Agua", cantidad = 500, fecha = calendar.time))
-        datos.add(Bebida(tipo = "Jugo", cantidad = 350, fecha = calendar.time))
-        
-        return datos
-    }
 }
 
 @Composable
