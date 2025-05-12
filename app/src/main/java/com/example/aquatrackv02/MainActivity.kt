@@ -36,6 +36,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -85,6 +86,28 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Aquatrackv02Theme {
+                val bebidas = remember { mutableStateListOf<Bebida>() }
+                val context = LocalContext.current
+
+                // Cargar datos guardados
+                LaunchedEffect(Unit) {
+                    val sharedPreferences = context.getSharedPreferences("app_data", Context.MODE_PRIVATE)
+                    val bebidasJson = sharedPreferences.getString("bebidas_guardadas", null)
+
+                    if (!bebidasJson.isNullOrEmpty()){
+                        try {
+                            val gson = Gson()
+                            val type = object : TypeToken<List<Bebida>>() {}.type
+                            val bebidasGuardadas = gson.fromJson<List<Bebida>>(bebidasJson, type)
+
+                            //Limpiar lista actual y agregar elementos guardados
+                            bebidas.clear()
+                            bebidas.addAll(bebidasGuardadas)
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "Error al cargar datos guardados", e)
+                        }
+                    }
+                }
                 Scaffold(
                     topBar = {
                         TopAppBar(
@@ -488,12 +511,7 @@ fun PantallaRegistroBebidas(bebidas: SnapshotStateList<Bebida>, modifier: Modifi
                         val cantidad = cantidadMl.toIntOrNull() ?: 0
                         if (cantidad > 0) {
                             bebidas.add(Bebida(tipo = tipoBebidaSeleccionada, cantidad = cantidad))
-                            val sharedPreferences = context.getSharedPreferences("app_data", Context.MODE_PRIVATE)
-                            val editor = sharedPreferences.edit()
-                            val gson = Gson()
-                            val bebidasJson = gson.toJson(bebidas)
-                            editor.putString("bebidas_guardadas", bebidasJson)
-                            editor.apply()
+                            guardarBebidas(context, bebidas)
                             cantidadMl = "250"  // Reset valor predeterminado
                             mostrarDialogo = false
 
@@ -530,5 +548,18 @@ fun PantallaRegistroBebidasPreview() {
     val bebidasPreview = remember { mutableStateListOf<Bebida>() }
     Aquatrackv02Theme {
         PantallaRegistroBebidas(bebidas = bebidasPreview)
+    }
+}
+
+private fun guardarBebidas(context: Context, bebidas: List<Bebida>){
+    try {
+        val sharedPreferences = context.getSharedPreferences("app_data", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        val gson = Gson()
+        val bebidasJson = gson.toJson(bebidas)
+        editor.putString("bebidas_guardadas", bebidasJson)
+        editor.apply()
+    } catch (e: Exception) {
+        Log.e("MainActivity", "Error al guardar datos", e)
     }
 }
