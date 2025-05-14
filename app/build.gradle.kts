@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -50,6 +51,10 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    // Añade esta línea en la sección de dependencies
+    implementation("com.google.firebase:firebase-firestore")
     implementation("androidx.constraintlayout:constraintlayout-compose:1.1.1")
     implementation(libs.gson)
     testImplementation(libs.junit)
