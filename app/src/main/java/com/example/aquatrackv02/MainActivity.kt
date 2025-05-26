@@ -418,6 +418,7 @@ class MainActivity : ComponentActivity() {
                                  width = Dimension.fillToConstraints
                                  height = Dimension.fillToConstraints
                              }
+                             .fillMaxSize() // Asegura que la lista ocupe todo el espacio disponible y sea desplazable
                      ) {
                          items(bebidas) { bebida ->
                              val formato = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -536,6 +537,7 @@ class MainActivity : ComponentActivity() {
                              width = Dimension.fillToConstraints
                              height = Dimension.fillToConstraints
                          }
+                         .fillMaxSize() // Asegura que la lista ocupe todo el espacio disponible y sea desplazable
                  ) {
                      items(bebidas) { bebida ->
                          val formato = SimpleDateFormat("HH:mm", Locale.getDefault())
