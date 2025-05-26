@@ -106,8 +106,11 @@ class GraficasActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Obtener el estado del tema oscuro de la actividad principal
+        val isDarkTheme = intent.getBooleanExtra("is_dark_theme", false)
+
         setContent {
-            Aquatrackv02Theme {
+            Aquatrackv02Theme(darkTheme = isDarkTheme) {
                 val context = LocalContext.current
                 var bebidas by remember { mutableStateOf<List<Bebida>>(emptyList()) }
                 var cargando by remember { mutableStateOf(true) }
@@ -143,6 +146,7 @@ class GraficasActivity : ComponentActivity() {
                     } else {
                         PantallaGraficos(
                             bebidas = bebidas,
+                            isDarkTheme = isDarkTheme,
                             modifier = Modifier.padding(innerPadding)
                         )
                     }
@@ -153,7 +157,7 @@ class GraficasActivity : ComponentActivity() {
 }
 
 @Composable
-fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
+fun PantallaGraficos(bebidas: List<Bebida>, isDarkTheme: Boolean, modifier: Modifier = Modifier) {
     LocalContext.current
     // Para guardar el tipo de bebida seleccionado en el gráfico
     var seleccionActual by remember { mutableStateOf("") }
@@ -228,8 +232,8 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                             // Configuración visual
                             dragDecelerationFrictionCoef = 0.95f
                             isDrawHoleEnabled = true
-                            setHoleColor(Color.WHITE)
-                            setTransparentCircleColor(Color.WHITE)
+                            setHoleColor(if (isDarkTheme) Color.BLACK else Color.WHITE)
+                            setTransparentCircleColor(if (isDarkTheme) Color.BLACK else Color.WHITE)
                             setTransparentCircleAlpha(110)
                             holeRadius = 50f
                             transparentCircleRadius = 53f
@@ -255,6 +259,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                                 formSize = 12f
                                 xEntrySpace = 10f
                                 yEntrySpace = 0f
+                                textColor = if (isDarkTheme) Color.WHITE else Color.BLACK
                             }
                             
                             // Evento de selección
@@ -318,7 +323,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                             
                             // Formato de valores
                             valueTextSize = 14f
-                            valueTextColor = Color.WHITE
+                            valueTextColor = if (isDarkTheme) Color.WHITE else Color.BLACK
                             valueTypeface = Typeface.DEFAULT_BOLD
                             valueFormatter = PercentFormatter(chart)
                         }
@@ -379,6 +384,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                                 setDrawGridLines(false)
                                 textSize = 12f
                                 typeface = Typeface.DEFAULT_BOLD
+                                textColor = if (isDarkTheme) Color.WHITE else Color.BLACK
                             }
                             
                             axisLeft.apply {
@@ -386,7 +392,8 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                                 axisMinimum = 0f
                                 typeface = Typeface.DEFAULT
                                 textSize = 12f
-                                
+                                textColor = if (isDarkTheme) Color.WHITE else Color.BLACK
+
                                 // Formato de valores en ml
                                 valueFormatter = object : ValueFormatter() {
                                     override fun getFormattedValue(value: Float): String {
@@ -408,6 +415,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                                 formSize = 12f
                                 textSize = 12f
                                 typeface = Typeface.DEFAULT_BOLD
+                                textColor = if (isDarkTheme) Color.WHITE else Color.BLACK
                             }
                             
                             // Evento de selección
@@ -479,12 +487,12 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                         // Configurar el dataset
                         val dataSet = BarDataSet(entries, "Consumo diario").apply {
                             // Colores degradados
-                            val startColor = Color.rgb(100, 181, 246)
-                            val endColor = Color.rgb(30, 136, 229)
-                            
+                            val startColor = if (isDarkTheme) Color.rgb(30, 136, 229) else Color.rgb(100, 181, 246)
+                            val endColor = if (isDarkTheme) Color.rgb(21, 101, 192) else Color.rgb(30, 136, 229)
+
                             color = startColor
                             highLightColor = endColor
-                            valueTextColor = Color.BLACK
+                            valueTextColor = if (isDarkTheme) Color.WHITE else Color.BLACK
                             valueTextSize = 10f
                             valueTypeface = Typeface.DEFAULT_BOLD
                             
@@ -569,8 +577,8 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                         // Configuración visual
                         dragDecelerationFrictionCoef = 0.95f
                         isDrawHoleEnabled = true
-                        setHoleColor(Color.WHITE)
-                        setTransparentCircleColor(Color.WHITE)
+                        setHoleColor(if (isDarkTheme) Color.BLACK else Color.WHITE)
+                        setTransparentCircleColor(if (isDarkTheme) Color.BLACK else Color.WHITE)
                         setTransparentCircleAlpha(110)
                         holeRadius = 50f
                         transparentCircleRadius = 53f
@@ -596,6 +604,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                             formSize = 12f
                             xEntrySpace = 10f
                             yEntrySpace = 0f
+                            textColor = if (isDarkTheme) Color.WHITE else Color.BLACK
                         }
                         
                         // Evento de selección
@@ -658,7 +667,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                         
                         // Formato de valores
                         valueTextSize = 14f
-                        valueTextColor = Color.WHITE
+                        valueTextColor = if (isDarkTheme) Color.WHITE else Color.BLACK
                         valueTypeface = Typeface.DEFAULT_BOLD
                         valueFormatter = PercentFormatter(chart)
                     }
@@ -704,6 +713,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                             setDrawGridLines(false)
                             textSize = 12f
                             typeface = Typeface.DEFAULT_BOLD
+                            textColor = if (isDarkTheme) Color.WHITE else Color.BLACK
                         }
                         
                         axisLeft.apply {
@@ -711,7 +721,8 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                             axisMinimum = 0f
                             typeface = Typeface.DEFAULT
                             textSize = 12f
-                            
+                            textColor = if (isDarkTheme) Color.WHITE else Color.BLACK
+
                             // Formato de valores en ml
                             valueFormatter = object : ValueFormatter() {
                                 override fun getFormattedValue(value: Float): String {
@@ -733,6 +744,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                             formSize = 12f
                             textSize = 12f
                             typeface = Typeface.DEFAULT_BOLD
+                            textColor = if (isDarkTheme) Color.WHITE else Color.BLACK
                         }
                         
                         // Evento de selección
@@ -804,12 +816,12 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                     // Configurar el dataset
                     val dataSet = BarDataSet(entries, "Consumo diario").apply {
                         // Colores degradados
-                        val startColor = Color.rgb(100, 181, 246)
-                        val endColor = Color.rgb(30, 136, 229)
-                        
+                        val startColor = if (isDarkTheme) Color.rgb(30, 136, 229) else Color.rgb(100, 181, 246)
+                        val endColor = if (isDarkTheme) Color.rgb(21, 101, 192) else Color.rgb(30, 136, 229)
+
                         color = startColor
                         highLightColor = endColor
-                        valueTextColor = Color.BLACK
+                        valueTextColor = if (isDarkTheme) Color.WHITE else Color.BLACK
                         valueTextSize = 10f
                         valueTypeface = Typeface.DEFAULT_BOLD
                         

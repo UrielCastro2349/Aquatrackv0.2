@@ -12,14 +12,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,6 +38,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import androidx.core.content.edit
@@ -189,7 +189,8 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            Aquatrackv02Theme {
+            var isDarkTheme by rememberSaveable { mutableStateOf(false) }
+            Aquatrackv02Theme(darkTheme = isDarkTheme) {
                 val bebidas = remember { mutableStateListOf<Bebida>() }
                 val context = LocalContext.current
 
@@ -219,6 +220,17 @@ class MainActivity : ComponentActivity() {
                                 Text("Registro de Bebidas")
                             },
                             actions = {
+                                IconButton(onClick = { isDarkTheme = !isDarkTheme }) {
+                                    Icon(
+                                        painter = painterResource(
+                                            id = if (isDarkTheme)
+                                                R.drawable.ic_dark_mode
+                                            else
+                                                R.drawable.ic_light_mode
+                                        ),
+                                        contentDescription = if (isDarkTheme) "Modo oscuro" else "Modo claro"
+                                    )
+                                }
                                 Button(
                                     onClick = {
                                         val gson = Gson()
@@ -226,6 +238,7 @@ class MainActivity : ComponentActivity() {
                                         // Navegar a la actividad de gráficos
                                         val intent = Intent(this@MainActivity, GraficasActivity::class.java).apply {
                                             putExtra("bebidas_json", bebidasJson)
+                                            putExtra("is_dark_theme", isDarkTheme)
                                         }
                                         startActivity(intent)
                                     },
@@ -375,7 +388,7 @@ fun PantallaRegistroBebidas(bebidas: SnapshotStateList<Bebida>, modifier: Modifi
                         .fillMaxWidth()
                         .padding(end = 16.dp)
                 ) {
-                    Icon(Icons.Default.Add, "Agregar bebida")
+                    Icon(painter = painterResource(id = R.drawable.ic_add), "Agregar bebida")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Agregar bebida")
                 }
@@ -571,7 +584,7 @@ fun PantallaRegistroBebidas(bebidas: SnapshotStateList<Bebida>, modifier: Modifi
             // Botón para agregar nueva bebida
             ExtendedFloatingActionButton(
                 onClick = { mostrarDialogo = true },
-                icon = { Icon(Icons.Default.Add, "Agregar bebida") },
+                icon = { Icon(painter = painterResource(id = R.drawable.ic_add), "Agregar bebida") },
                 text = { Text("Agregar bebida") },
                 modifier = Modifier.constrainAs(addButton) {
                     bottom.linkTo(parent.bottom)
