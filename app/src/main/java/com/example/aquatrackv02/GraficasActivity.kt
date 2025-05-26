@@ -32,14 +32,12 @@ import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.PercentFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
-import com.github.mikephil.charting.utils.ColorTemplate
 import com.github.mikephil.charting.utils.MPPointF
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -54,7 +52,9 @@ private fun hayConexionInternet(context: Context): Boolean {
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     } else {
+        @Suppress("DEPRECATION")
         val networkInfo = connectivityManager.activeNetworkInfo
+        @Suppress("DEPRECATION")
         return networkInfo != null && networkInfo.isConnected
     }
 }
@@ -276,7 +276,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                                             bebidas.sumOf { bebida -> bebida.cantidad }
                                             val cantidadTipo = bebidas.filter { bebida -> bebida.tipo == tipo }
                                                                      .sumOf { bebida -> bebida.cantidad }
-                                            seleccionActual = "Seleccionado: $tipo - $cantidadTipo ml (${String.format("%.1f", porcentaje)}%)"
+                                            seleccionActual = "Seleccionado: $tipo - $cantidadTipo ml (${String.format(Locale.getDefault(), "%.1f", porcentaje)}%)"
                                             invalidate() // Refrescar gráfico
                                         }
                                     }
@@ -426,7 +426,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                                             it.x.toInt()
                                             val valor = it.y
                                             // La etiqueta se obtiene del eje X
-                                            val etiqueta = xAxis.valueFormatter.getFormattedValue(it.x, xAxis)
+                                            val etiqueta = xAxis.valueFormatter?.getFormattedValue(it.x) ?: ""
                                             seleccionActual = "Día: $etiqueta - Consumo: ${valor.toInt()} ml"
                                             invalidate()
                                         }
@@ -617,7 +617,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                                         bebidas.sumOf { bebida -> bebida.cantidad }
                                         val cantidadTipo = bebidas.filter { bebida -> bebida.tipo == tipo }
                                                                  .sumOf { bebida -> bebida.cantidad }
-                                        seleccionActual = "Seleccionado: $tipo - $cantidadTipo ml (${String.format("%.1f", porcentaje)}%)"
+                                        seleccionActual = "Seleccionado: $tipo - $cantidadTipo ml (${String.format(Locale.getDefault(), "%.1f", porcentaje)}%)"
                                         invalidate() // Refrescar gráfico
                                     }
                                 }
@@ -751,7 +751,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                                         it.x.toInt()
                                         val valor = it.y
                                         // La etiqueta se obtiene del eje X
-                                        val etiqueta = xAxis.valueFormatter.getFormattedValue(it.x, xAxis)
+                                        val etiqueta = xAxis.valueFormatter?.getFormattedValue(it.x) ?: ""
                                         seleccionActual = "Día: $etiqueta - Consumo: ${valor.toInt()} ml"
                                         invalidate()
                                     }
