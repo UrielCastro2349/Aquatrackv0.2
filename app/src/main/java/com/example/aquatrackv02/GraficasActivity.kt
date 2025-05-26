@@ -1,6 +1,10 @@
 package com.example.aquatrackv02
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import android.graphics.Color
@@ -37,26 +41,93 @@ import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.github.mikephil.charting.utils.ColorTemplate
 import com.github.mikephil.charting.utils.MPPointF
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import java.text.SimpleDateFormat
 import java.util.*
+
+// Verificar conexión a internet
+private fun hayConexionInternet(context: Context): Boolean {
+    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    } else {
+        val networkInfo = connectivityManager.activeNetworkInfo
+        return networkInfo != null && networkInfo.isConnected
+    }
+}
+
+// Cargar bebidas desde Firestore o localmente
+private fun cargarBebidas(context: Context, callback: (List<Bebida>) -> Unit) {
+    if (hayConexionInternet(context)) {
+        // Cargar desde Firestore
+        val db = Firebase.firestore
+        db.collection("bebidas")
+            .get()
+            .addOnSuccessListener { result ->
+                val bebidasList = mutableListOf<Bebida>()
+                for (document in result) {
+                    val id = document.getString("id") ?: UUID.randomUUID().toString()
+                    val tipo = document.getString("tipo") ?: ""
+                    val cantidad = document.getLong("cantidad")?.toInt() ?: 0
+                    val fecha = document.getTimestamp("fecha")?.toDate() ?: Date()
+                    bebidasList.add(Bebida(id, tipo, cantidad, fecha))
+                }
+                callback(bebidasList)
+                Log.d("GraficasActivity", "Bebidas cargadas desde Firestore: ${bebidasList.size}")
+            }
+            .addOnFailureListener { e ->
+                Log.e("GraficasActivity", "Error al cargar de Firestore", e)
+                cargarBebidasLocal(context, callback)
+            }
+    } else {
+        // Sin conexión, cargar desde local
+        cargarBebidasLocal(context, callback)
+    }
+}
+
+private fun cargarBebidasLocal(context: Context, callback: (List<Bebida>) -> Unit) {
+    try {
+        val sharedPreferences = context.getSharedPreferences("app_data", Context.MODE_PRIVATE)
+        val bebidasJson = sharedPreferences.getString("bebidas_guardadas", null)
+        if (bebidasJson != null) {
+            val type = object : TypeToken<List<Bebida>>() {}.type
+            val gson = Gson()
+            val bebidas = gson.fromJson<List<Bebida>>(bebidasJson, type)
+            callback(bebidas)
+            Log.d("GraficasActivity", "Bebidas cargadas localmente: ${bebidas.size}")
+        } else {
+            callback(emptyList())
+            Log.d("GraficasActivity", "No hay bebidas guardadas localmente")
+        }
+    } catch (e: Exception) {
+        Log.e("GraficasActivity", "Error al cargar datos locales", e)
+        callback(emptyList())
+    }
+}
 
 class GraficasActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        
-        // Obtener datos de prueba (en una app real, estos deberían venir de una base de datos)
-        val sharedPreferences = getSharedPreferences("app_data", Context.MODE_PRIVATE)
-        val bebidasJson = sharedPreferences.getString("bebidas_guardadas", null)
-
-        val gson = Gson()
-        val type = object : TypeToken<List<Bebida>>() {}.type
-        val datosUsuario = gson.fromJson<List<Bebida>>(bebidasJson, type)
-
 
         setContent {
             Aquatrackv02Theme {
+                val context = LocalContext.current
+                var bebidas by remember { mutableStateOf<List<Bebida>>(emptyList()) }
+                var cargando by remember { mutableStateOf(true) }
+
+                // Cargar datos desde Firestore o local
+                LaunchedEffect(Unit) {
+                    cargarBebidas(context) { lista ->
+                        bebidas = lista
+                        cargando = false
+                    }
+                }
+
                 Scaffold(
                     topBar = {
                         TopAppBar(
@@ -73,20 +144,25 @@ class GraficasActivity : ComponentActivity() {
                     },
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
-                    PantallaGraficos(
-                        bebidas = datosUsuario ?: emptyList(),
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    if (cargando) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    } else {
+                        PantallaGraficos(
+                            bebidas = bebidas,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    }
                 }
             }
         }
     }
-    
 }
 
 @Composable
 fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
+    LocalContext.current
     // Para guardar el tipo de bebida seleccionado en el gráfico
     var seleccionActual by remember { mutableStateOf("") }
     
@@ -197,7 +273,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                                             val tipo = it.label
                                             val porcentaje = it.value
                                             // Mostrar información de la selección
-                                            val total = bebidas.sumOf { bebida -> bebida.cantidad }
+                                            bebidas.sumOf { bebida -> bebida.cantidad }
                                             val cantidadTipo = bebidas.filter { bebida -> bebida.tipo == tipo }
                                                                      .sumOf { bebida -> bebida.cantidad }
                                             seleccionActual = "Seleccionado: $tipo - $cantidadTipo ml (${String.format("%.1f", porcentaje)}%)"
@@ -347,7 +423,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                                 override fun onValueSelected(e: Entry?, h: Highlight?) {
                                     e?.let {
                                         if (it is BarEntry) {
-                                            val index = it.x.toInt()
+                                            it.x.toInt()
                                             val valor = it.y
                                             // La etiqueta se obtiene del eje X
                                             val etiqueta = xAxis.valueFormatter.getFormattedValue(it.x, xAxis)
@@ -538,7 +614,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                                         val tipo = it.label
                                         val porcentaje = it.value
                                         // Mostrar información de la selección
-                                        val total = bebidas.sumOf { bebida -> bebida.cantidad }
+                                        bebidas.sumOf { bebida -> bebida.cantidad }
                                         val cantidadTipo = bebidas.filter { bebida -> bebida.tipo == tipo }
                                                                  .sumOf { bebida -> bebida.cantidad }
                                         seleccionActual = "Seleccionado: $tipo - $cantidadTipo ml (${String.format("%.1f", porcentaje)}%)"
@@ -672,7 +748,7 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                             override fun onValueSelected(e: Entry?, h: Highlight?) {
                                 e?.let {
                                     if (it is BarEntry) {
-                                        val index = it.x.toInt()
+                                        it.x.toInt()
                                         val valor = it.y
                                         // La etiqueta se obtiene del eje X
                                         val etiqueta = xAxis.valueFormatter.getFormattedValue(it.x, xAxis)
@@ -749,29 +825,29 @@ fun PantallaGraficos(bebidas: List<Bebida>, modifier: Modifier = Modifier) {
                         valueFormatter = object : ValueFormatter() {
                             override fun getFormattedValue(value: Float): String {
                                 return if (value > 0) "${value.toInt()} ml" else ""
+                                }
                             }
                         }
+
+                        // Configurar data
+                        val data = BarData(dataSet).apply {
+                            barWidth = 0.7f
+                            // Al menos 20px entre barras
+                            setValueTextSize(10f)
+                        }
+
+                        chart.data = data
+
+                        // Configurar espaciado
+                        chart.setFitBars(true)
+
+                        // Animación
+                        chart.animateY(1400, Easing.EaseInOutQuad)
+
+                        // Refrescar
+                        chart.invalidate()
                     }
-                    
-                    // Configurar data
-                    val data = BarData(dataSet).apply {
-                        barWidth = 0.7f
-                        // Al menos 20px entre barras
-                        setValueTextSize(10f)
-                    }
-                    
-                    chart.data = data
-                    
-                    // Configurar espaciado
-                    chart.setFitBars(true)
-                    
-                    // Animación
-                    chart.animateY(1400, Easing.EaseInOutQuad)
-                    
-                    // Refrescar
-                    chart.invalidate()
-                }
-            )
+                )
+            }
         }
     }
-}
