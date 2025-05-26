@@ -26,13 +26,20 @@ object NotificationHelper {
 
     fun showNotification(context: Context, title: String, message: String, notificationId: Int) {
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_dialog_info) // Use an appropriate icon
+            .setSmallIcon(R.drawable.ic_dialog_info) // Usa un ícono apropiado
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
 
         with(NotificationManagerCompat.from(context)) {
-            notify(notificationId, builder.build())
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                androidx.core.content.ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                notify(notificationId, builder.build())
+            }
         }
     }
 }
